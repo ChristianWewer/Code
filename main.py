@@ -6,6 +6,7 @@ from sklearn.model_selection import KFold, train_test_split
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import argparse
 
 import wandb
 
@@ -26,7 +27,7 @@ def train(autoencoder, data, epochs=1000):
         print(epoch, loss)
     return autoencoder
 
-def train_vae(vae, data,config,epochs=5000):
+def train_vae(vae, data,config,output_filename,epochs=5000):
     vae.train()
     best_model_loss = np.inf
     opt = torch.optim.Adam(vae.parameters(),lr=config["lr"])
@@ -48,7 +49,7 @@ def train_vae(vae, data,config,epochs=5000):
         if train_loss < best_model_loss:
             best_model_loss = train_loss
             best_epoch = epoch
-            torch.save(vae,"bestmodel_vae.pt")
+            torch.save(vae,f"trained_models/{output_filename}.pt")
         
 
         wandb.log({"epoch":epoch,"loss":train_loss/loss_step,"recon_loss":recon_loss/loss_step, "KL-divergence":KL_divergence/loss_step},step=epoch)
@@ -104,7 +105,7 @@ def use_autoencoder():
     plot_latent(autoencoder, plot_data)
 
 
-def use_vae(config):
+def use_vae(config, output_filename="bestmodel"):
     latent_dims = config["latent_dims"]
     vae = VAE(latent_dims)
 
@@ -126,7 +127,7 @@ def use_vae(config):
 
     train_dataset = TensorDataset(x_train)
     data = DataLoader(train_dataset, batch_size=config["batch_size"],shuffle=True,drop_last=True)
-    vae, best_epoch, best_model_loss = train_vae(vae, data, config)
+    vae, best_epoch, best_model_loss = train_vae(vae, data, config, output_filename)
 
 
     plot_dataset = TensorDataset(x_train, y_train)
@@ -134,16 +135,22 @@ def use_vae(config):
 
 
     # Load best model:
-    best_model = torch.load("bestmodel_vae.pt")
+    best_model = torch.load(f"trained_models/{output_filename}.pt")
 
-    plot_latent(best_model, plot_data, best_epoch, best_model_loss, latent_dims)
+    if latent_dims <= 3:
+        plot_latent(best_model, plot_data, best_epoch, best_model_loss, latent_dims)
 
 
 if __name__ == "__main__":
-    config = {"lr":0.01, "latent_dims":4, "batch_size":128}
+    parser = argparse.ArgumentParser(description="This scripts trains a variational autoencoder")
+    parser.add_argument('-o','--output-name',dest="output_name", help="Output filename")
+    parser.add_argument('-d','--latent-dims',dest="latent_dims", help="Sets the number of latent dimensions minimum 2, maximum 5")
+    args = parser.parse_args()
+
+    config = {"lr":0.01, "latent_dims":int(args.latent_dims), "batch_size":128}
 
     device = 'cpu'
 
-    wandb.init(config=config)    
+    wandb.init(project="VAE-training-1",name=args.output_name,config=config)    
     #use_autoencoder()
-    use_vae(config)
+    use_vae(config, args.output_name)
