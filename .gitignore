@@ -1,4 +1,5 @@
 *.csv
+trained_models
 .ipynb_checkpoints
 __pycache__
 MNIST_example

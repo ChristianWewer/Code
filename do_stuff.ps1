@@ -1,0 +1,10 @@
+python .\main.py -d 2 -o 2d-exp0
+python .\main.py -d 2 -o 2d-exp1
+python .\main.py -d 2 -o 2d-exp2
+python .\main.py -d 2 -o 2d-exp3
+python .\main.py -d 2 -o 2d-exp4
+python .\main.py -d 2 -o 2d-exp5
+python .\main.py -d 2 -o 2d-exp6
+python .\main.py -d 2 -o 2d-exp7
+python .\main.py -d 2 -o 2d-exp8
+python .\main.py -d 2 -o 2d-exp9
