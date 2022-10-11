@@ -5,3 +5,4 @@ __pycache__
 MNIST_example
 wandb
 RayTuneLog
+bestmodel.pt
