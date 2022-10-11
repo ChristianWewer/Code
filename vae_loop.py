@@ -11,7 +11,9 @@ import random
 import json
 
 
-def vae_loop(augment_data=True, random_seed=10):
+def vae_loop(augmented_data_sample_size, augment_data=True, random_seed=10):
+    rng = np.random.default_rng()
+
     """ Runs the entire experiment loop of training VAE, Generating data, training MCE, testing MCE.
     Returns list of MCE performance across 10 folds.
     """
@@ -84,13 +86,10 @@ def vae_loop(augment_data=True, random_seed=10):
                 generated_data_list.append(generated_data)
 
             generated_data = np.concatenate(generated_data_list,0)
-
+            generated_data = rng.choice(generated_data, augmented_data_sample_size)
             # Generated data for MCE (remove end_rh)
             y_generated_for_mce = [observation[6] for observation in generated_data]
             x_generated_for_mce = [np.delete(observation, 6) for observation in generated_data]
-
-            x_gen_tens = torch.Tensor(x_generated_for_mce)
-            y_gen_tens = torch.Tensor(y_generated_for_mce)
 
             
             ########################
@@ -142,14 +141,17 @@ def vae_loop(augment_data=True, random_seed=10):
     return mse_error_list, mae_error_list
 
 if __name__ == "__main__":
-
     rcv_mse_mean_error_list = []
     rcv_mae_mean_error_list = []
     rcv_mse_error_list = []
     rcv_mae_error_list = []
+
+
+    augmented_data_sample_size=10
+
     #TODO: must be able to choose how many augmented datapoints to use in vae_loop()
     for i in range(2):
-        mse_error_list, mae_error_list = vae_loop(augment_data=False, random_seed=random.randint(1,100000))
+        mse_error_list, mae_error_list = vae_loop(augmented_data_sample_size, augment_data=True, random_seed=random.randint(1,100000))
         rcv_mse_error_list.append(mse_error_list)
         rcv_mae_error_list.append(mae_error_list)
 
@@ -165,10 +167,10 @@ if __name__ == "__main__":
     
 
     data = {
-        "rcv_mse_error_list": rcv_mse_error_list, 
-        "rcv_mae_error_list": rcv_mae_error_list,
-        "rcv_mse_mean_error_list": rcv_mse_mean_error_list,
-        "rcv_mae_mean_error_list": rcv_mae_mean_error_list
+        "rcv_mse_error_list": str(rcv_mse_error_list), 
+        "rcv_mae_error_list": str(rcv_mae_error_list),
+        "rcv_mse_mean_error_list": str(rcv_mse_mean_error_list),
+        "rcv_mae_mean_error_list": str(rcv_mae_mean_error_list)
         }
 
 
