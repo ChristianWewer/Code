@@ -97,7 +97,7 @@ def train(net, train_set, test_set, config, max_epochs=4000):
     criterion = nn.MSELoss()
     val_criterion = nn.MSELoss()
     optimizer = optim.Adam(net.parameters(), config["lr"])
-    earlystopper = EarlyStopping(patience=400,verbose=False)
+    earlystopper = EarlyStopping(patience=200,verbose=False)
     # Run on GPU if possible
     device = "cpu"
     if torch.cuda.is_available():
@@ -111,26 +111,11 @@ def train(net, train_set, test_set, config, max_epochs=4000):
 
     validation_loss_list = []
 
-    # Fit scaler on current training data so that it has not seen test data
-    #x_train_scaled = scaler.fit_transform(trainset[:,][0])
-    #x_val_scaled = scaler.transform(testset[:,][0])
-    
-    ######################
-    ### Saving scaler: ###
-    ######################
-    #joblib.dump(scaler, "results/models/std_scaler.bin", compress=True)       
-    ######################
-    
-    #x_train_tensor_scaled = torch.from_numpy(x_train_scaled).float()
-    #x_val_tensor_scaled = torch.from_numpy(x_val_scaled).float()
     
     
     train_loader = DataLoader(train_set, batch_size=config["batch_size"],shuffle=False,drop_last=False)
     val_loader = DataLoader(test_set, batch_size=len(test_set),shuffle=False,drop_last=False)
 
-
-    #train_loader = DataLoader(train_set, batch_size=config["batch_size"],shuffle=True,drop_last=True)
-    #val_loader = DataLoader(test_set, batch_size=len(test_set),shuffle=True,drop_last=True)
         
 
     for epoch in range(max_num_epochs):
