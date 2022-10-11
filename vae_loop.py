@@ -8,9 +8,10 @@ from torch.utils.data import DataLoader, TensorDataset
 import wandb
 import numpy as np
 import random
+import json
 
 
-def vae_loop():
+def vae_loop(augment_data=True, random_seed=10):
     """ Runs the entire experiment loop of training VAE, Generating data, training MCE, testing MCE.
     Returns list of MCE performance across 10 folds.
     """
@@ -32,7 +33,6 @@ def vae_loop():
 
     mse_error_list = []
     mae_error_list = []
-    random_seed = 10
 
     # load original dataset:
     dataset_name = "dataset"
@@ -63,7 +63,6 @@ def vae_loop():
         ##################
         # Train the VAE: #
         ##################
-        augment_data = True
         if augment_data:
             print("Train Variational Autoencoder")
             vae = VAE_3hl(optimal_VAE_hyperparameter_config["latent_dims"],optimal_VAE_hyperparameter_config["layers"])
@@ -116,8 +115,6 @@ def vae_loop():
 
         results = train(net, train_dataset_mce, test_dataset, optimal_MCE_hyperparameter_config)
 
-
-
         ############################################################
         # test performance using the testset called: test_data_mce #
         ############################################################
@@ -146,5 +143,34 @@ def vae_loop():
 
 if __name__ == "__main__":
 
+    rcv_mse_mean_error_list = []
+    rcv_mae_mean_error_list = []
+    rcv_mse_error_list = []
+    rcv_mae_error_list = []
     #TODO: must be able to choose how many augmented datapoints to use in vae_loop()
-    mse_error_list, mae_error_list = vae_loop()
+    for i in range(2):
+        mse_error_list, mae_error_list = vae_loop(augment_data=False, random_seed=random.randint(1,100000))
+        rcv_mse_error_list.append(mse_error_list)
+        rcv_mae_error_list.append(mae_error_list)
+
+        rcv_mse_mean_error_list.append(np.mean(mse_error_list))
+        rcv_mae_mean_error_list.append(np.mean(mae_error_list))
+
+
+    print(f"Mean MSE: {np.mean(rcv_mse_mean_error_list)}")
+    print(f"Mean MAE: {np.mean(rcv_mae_mean_error_list)}")
+
+    print(f"STD MSE: {np.std(rcv_mse_mean_error_list)}")
+    print(f"STD MAE: {np.std(rcv_mae_mean_error_list)}")
+    
+
+    data = {
+        "rcv_mse_error_list": rcv_mse_error_list, 
+        "rcv_mae_error_list": rcv_mae_error_list,
+        "rcv_mse_mean_error_list": rcv_mse_mean_error_list,
+        "rcv_mae_mean_error_list": rcv_mae_mean_error_list
+        }
+
+
+    with open("testfile.json",'w') as output_file:
+        output_file.write(json.dumps(data))
