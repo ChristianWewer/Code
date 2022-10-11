@@ -9,6 +9,7 @@ import wandb
 import numpy as np
 import random
 import json
+import argparse
 
 
 def vae_loop(augmented_data_sample_size, augment_data=True, random_seed=10):
@@ -19,10 +20,10 @@ def vae_loop(augmented_data_sample_size, augment_data=True, random_seed=10):
     """
     # Optimal parameters found
     optimal_VAE_hyperparameter_config = {
-        "lr":0.0006,
+        "lr":0.0003,
         "layers":[512,256,128],
-        "batch_size":62,
-        "latent_dims":4
+        "batch_size":64,
+        "latent_dims":5
         }
 
     optimal_MCE_hyperparameter_config = {
@@ -78,7 +79,7 @@ def vae_loop(augmented_data_sample_size, augment_data=True, random_seed=10):
             best_vae_model = torch.load(f"trained_models/{vae_model_output_name}.pt")
 
             generated_data_list = []
-            for i in range(10):
+            for i in range(100):
                 sample = best_vae_model.draw_sample()
                 sample = sample.float()
                 generated_data = best_vae_model.decoder(sample)
@@ -141,16 +142,23 @@ def vae_loop(augmented_data_sample_size, augment_data=True, random_seed=10):
     return mse_error_list, mae_error_list
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="This scripts runs the VAE-MCE-RCV-loop")
+    parser.add_argument('-o','--output-name',dest="output_name", help="Output filename")
+    parser.add_argument('-n','--nAugmented',dest="n_augmented_samples", help="Sets the number of augmented samples to be used in the training set")
+    parser.add_argument('-ncv','--nRepeatedCV',dest="n_rcv", help="Sets the number of repeats of cross validation")
+    args = parser.parse_args()
+
+
+
     rcv_mse_mean_error_list = []
     rcv_mae_mean_error_list = []
     rcv_mse_error_list = []
     rcv_mae_error_list = []
 
 
-    augmented_data_sample_size=10
+    augmented_data_sample_size=int(args.n_augmented_samples)
 
-    #TODO: must be able to choose how many augmented datapoints to use in vae_loop()
-    for i in range(2):
+    for i in range(int(args.n_rcv)):
         mse_error_list, mae_error_list = vae_loop(augmented_data_sample_size, augment_data=True, random_seed=random.randint(1,100000))
         rcv_mse_error_list.append(mse_error_list)
         rcv_mae_error_list.append(mae_error_list)
@@ -173,6 +181,6 @@ if __name__ == "__main__":
         "rcv_mae_mean_error_list": str(rcv_mae_mean_error_list)
         }
 
-
-    with open("testfile.json",'w') as output_file:
+    output_filename = str(args.output_name)
+    with open(f"output_filename",'w') as output_file:
         output_file.write(json.dumps(data))
