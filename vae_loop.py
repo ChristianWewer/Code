@@ -124,6 +124,7 @@ def vae_loop():
         print("Estimate performance")
         best_model = results["model_list"][0]
 
+        best_model.eval()
         predictions = best_model(test_data_mce[0]).detach().numpy().transpose()[0]
         residuals = predictions-test_data_mce[1].numpy()
         mse = np.mean(residuals**2)
