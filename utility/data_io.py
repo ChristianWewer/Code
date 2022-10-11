@@ -5,7 +5,7 @@ import random
 import numpy as np
 import pandas as pd
 
-def load_data(dataset: str,split_size=0, include_initial_mass=True) -> tuple:
+def load_data(dataset: str,split_size=0, include_initial_mass=True, for_vae=True) -> tuple:
     """ 
     Inputs: 
     - dataset: (str) name of a csv dataset without .csv
@@ -22,9 +22,15 @@ def load_data(dataset: str,split_size=0, include_initial_mass=True) -> tuple:
     
     
     if include_initial_mass:
-        X = oven_df[["drying_time","end_temp","mean_oven_input_temperature","mean_blower_differential_pressure","oven_inlet_end_temperature","initial_mass","end_mc","OCN1","OCN2","OCN3","OCN4"]].values
+        if for_vae:
+            X = oven_df[["drying_time","end_temp","mean_oven_input_temperature","mean_blower_differential_pressure","oven_inlet_end_temperature","initial_mass","end_mc","OCN1","OCN2","OCN3","OCN4"]].values
+        else:
+            X = oven_df[["drying_time","end_temp","mean_oven_input_temperature","mean_blower_differential_pressure","oven_inlet_end_temperature","initial_mass","OCN1","OCN2","OCN3","OCN4"]].values
     else:
-        X = oven_df[["drying_time","end_temp","mean_oven_input_temperature","mean_blower_differential_pressure","oven_inlet_end_temperature","end_mc","oven_chamber_position","OCN1","OCN2","OCN3","OCN4"]].values
+        if for_vae:
+            X = oven_df[["drying_time","end_temp","mean_oven_input_temperature","mean_blower_differential_pressure","oven_inlet_end_temperature","end_mc","oven_chamber_position","OCN1","OCN2","OCN3","OCN4"]].values
+        else:
+            X = oven_df[["drying_time","end_temp","mean_oven_input_temperature","mean_blower_differential_pressure","oven_inlet_end_temperature","oven_chamber_position","OCN1","OCN2","OCN3","OCN4"]].values
 
 
     Y = oven_df["end_mc"]

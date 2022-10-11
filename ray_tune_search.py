@@ -13,10 +13,10 @@ import time
 
 def optimize_parameters(train_data, num_samples=1):
     config = {
-        "layers": tune.grid_search([[512, 256, 128],[256, 128, 64], [128, 64, 32], [64, 32, 16], [32, 16, 8], [16, 8, 4]]),
+        "layers": tune.grid_search([[512, 256, 128],[256, 128, 64], [128, 64, 32], [64, 32, 16], [32, 16, 8]]),
         "lr": tune.loguniform(1e-4, 1e-1),
         "batch_size": tune.choice([8,16,32,64]),
-        "latent_dims": 2
+        "latent_dims": 4
     }
 
     scheduler = ASHAScheduler(
@@ -32,14 +32,12 @@ def optimize_parameters(train_data, num_samples=1):
         metric_columns=["training_iteration","loss","std"]
         )
 
-    kfolds=5
-    kfolds = kfolds
 
     tune.run(
         partial(tune_train_vae, train_data=train_data, kfolds=10),
-        resources_per_trial={"cpu": 8, "gpu": 0},
+        resources_per_trial={"cpu": 2, "gpu": 0},
         local_dir="C:\\data\\VAE",
-        name="3hl_2d_v3-cpu8",
+        name=f"3hl_4d",
         config=config,
         num_samples=num_samples,
         scheduler=scheduler,
@@ -48,7 +46,7 @@ def optimize_parameters(train_data, num_samples=1):
 
 
 if __name__ == "__main__":
-    num_samples = 10
+    num_samples = 100
     dataset_name = "dataset"
 
     train_data = load_data_no_y(dataset_name, 0, True)

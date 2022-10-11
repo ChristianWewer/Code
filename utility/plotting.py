@@ -2,6 +2,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import wandb
+from sklearn.decomposition import PCA
+
+
 
 def plot_latent(autoencoder, data, best_epoch, best_model_loss, latent_dims):
     z_list = []

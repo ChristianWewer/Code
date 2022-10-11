@@ -1,9 +1,9 @@
 import torch
-from networks.VAE import VAE
+from networks.VAE import VAE, VAE_3hl
 from torch.utils.data import DataLoader
 import argparse
 from utility.data_io import load_data, load_data_no_y
-from utility.train_network import train_vae, tune_train_vae
+from utility.train_network import train_vae
 from utility.plotting import plot_latent
 import wandb
 
@@ -46,19 +46,17 @@ if __name__ == "__main__":
 
     device = 'cpu'
 
-    wandb.init(project="ray_tune_tester-1",name=args.output_name,config=config)    
-    #use_autoencoder()
-    #use_vae(config, args.output_name)
+    wandb.init(project="4d-run1",name=args.output_name,config=config)    
+
     config = {
     "layers": [512, 256, 128],
-    "lr": 0.001,
-    "batch_size": 16,
-    "latent_dims": 2
+    "lr": 0.0006,
+    "batch_size": 64,
+    "latent_dims": args.latent_dims
     }
+    vae = VAE_3hl(int(config["latent_dims"]),config["layers"])
 
-    train_set = load_data_no_y("dataset", 0, True)
-    print(train_set)
-    print(type(train_set))
+    train_set, val_data = load_data("dataset", 0.3, True)
 
-
-    tune_train_vae(config, train_data=train_set)
+    train_vae(vae,train_set,val_data,config,args.output_name,4000)
+    #tune_train_vae(config, train_data=train_set)
