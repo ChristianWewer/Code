@@ -182,5 +182,5 @@ if __name__ == "__main__":
         }
 
     output_filename = str(args.output_name)
-    with open(f"output_filename",'w') as output_file:
+    with open(f"{output_filename}.json",'w') as output_file:
         output_file.write(json.dumps(data))
