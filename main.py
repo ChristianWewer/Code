@@ -22,7 +22,7 @@ def use_vae(config, output_filename="bestmodel"):
     # Load dataset
     dataset = "dataset"
     train_set, test_set = load_data(dataset,split_size=0.30,include_initial_mass=True)
-    print()
+
 
     train_dataloader = DataLoader(train_set, batch_size=32, shuffle=True, drop_last = True)
     val_dataloader = DataLoader(test_set, batch_size=32, shuffle=True, drop_last = True)
