@@ -6,3 +6,4 @@ MNIST_example
 wandb
 RayTuneLog
 bestmodel.pt
+results

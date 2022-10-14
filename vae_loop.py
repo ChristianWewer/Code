@@ -4,15 +4,18 @@ from utility.data_io import load_data
 from sklearn.model_selection import KFold, train_test_split
 from utility.train_network import train_vae, train
 import torch
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import TensorDataset
+from utility.plotting import plot_latent
 import wandb
 import numpy as np
 import random
 import json
+import os
+import sys
 import argparse
 
 
-def vae_loop(augmented_data_sample_size, augment_data=True, random_seed=10):
+def vae_loop(augmented_data_sample_size, current_iteration, experiment_name, augment_data=True, random_seed=10):
     rng = np.random.default_rng()
 
     """ Runs the entire experiment loop of training VAE, Generating data, training MCE, testing MCE.
@@ -45,7 +48,7 @@ def vae_loop(augmented_data_sample_size, augment_data=True, random_seed=10):
     test_size = 20
     kfold = KFold(n_splits=n_splits)
 
-    wandb.init(project="kfold_check",name="test_name",config=optimal_VAE_hyperparameter_config)    
+    #wandb.init(project="kfold_check",name="test_name",config=optimal_VAE_hyperparameter_config)    
 
     for fold, (train_index, test_index) in enumerate(kfold.split(train_set_vae)):
         print(f"Fold: {fold}")
@@ -62,21 +65,23 @@ def vae_loop(augmented_data_sample_size, augment_data=True, random_seed=10):
         train_y_vae = train_data_vae[1] # strictly not needed
         # the thing is, maybe this is all unnecesary and i can just glue the two together for the VAE training?
         x_train_mce, x_test_mce, y_train_mce, y_test_mce = train_test_split(train_x_mce, train_y_mce, test_size=test_size,random_state=random_seed) # Please verify that these result in the same splits
-        x_train_vae, x_test_vae, _, _ = train_test_split(train_x_vae, train_y_vae, test_size=test_size,random_state=random_seed) # please verify that these result in the same splits
+        x_train_vae, x_test_vae, y_train_vae, _ = train_test_split(train_x_vae, train_y_vae, test_size=test_size,random_state=random_seed) # please verify that these result in the same splits
         ##################
         # Train the VAE: #
         ##################
         if augment_data:
             print("Train Variational Autoencoder")
             vae = VAE_3hl(optimal_VAE_hyperparameter_config["latent_dims"],optimal_VAE_hyperparameter_config["layers"])
-            vae_model_output_name = f"{fold}-fold-best_model_vae"
-            train_vae(vae,x_train_vae,x_test_vae,optimal_VAE_hyperparameter_config,vae_model_output_name,5000)
+            vae_model_output_name = f"{current_iteration}-iter-{fold}-fold-best_model_vae"
+            train_vae(vae,x_train_vae,x_test_vae,optimal_VAE_hyperparameter_config,vae_model_output_name,experiment_name,5000)
             
             #####################################
             # Generate a dataset using the VAE: #
             #####################################
             print("Generate augmented data")
-            best_vae_model = torch.load(f"trained_models/{vae_model_output_name}.pt")
+            best_vae_model = torch.load(f"results/{experiment_name}/trained_models/{vae_model_output_name}.pt")
+            best_vae_model.eval()
+
 
             generated_data_list = []
             for i in range(100):
@@ -92,7 +97,19 @@ def vae_loop(augmented_data_sample_size, augment_data=True, random_seed=10):
             y_generated_for_mce = [observation[6] for observation in generated_data]
             x_generated_for_mce = [np.delete(observation, 6) for observation in generated_data]
 
+            ###########################################
+            # plot PCA representation of latent space #
+            ###########################################
             
+            # Plot PCA representation of the latent space
+            pca = plot_latent(vae.encoder(x_train_vae).detach().numpy(),y_train_vae,experiment_name,current_iteration,fold,"train-data")
+
+            # Plot PCA representation of the generated data in the latent space:
+            plot_latent(vae.encoder(torch.Tensor(generated_data)).detach().numpy(),y_generated_for_mce, experiment_name, current_iteration, fold, "generated-data-train_data_pca", pca=pca)
+            plot_latent(vae.encoder(torch.Tensor(generated_data)).detach().numpy(),y_generated_for_mce, experiment_name, current_iteration, fold, "generated-data")
+
+            # Make sure to also plot non-latent space.
+
             ########################
             # Merge data as needed #
             ########################
@@ -143,10 +160,30 @@ def vae_loop(augmented_data_sample_size, augment_data=True, random_seed=10):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="This scripts runs the VAE-MCE-RCV-loop")
+    parser.add_argument('-e','--experiment-name',dest="experiment_name", help="Experiment name")
     parser.add_argument('-o','--output-name',dest="output_name", help="Output filename")
     parser.add_argument('-n','--nAugmented',dest="n_augmented_samples", help="Sets the number of augmented samples to be used in the training set")
     parser.add_argument('-ncv','--nRepeatedCV',dest="n_rcv", help="Sets the number of repeats of cross validation")
     args = parser.parse_args()
+
+
+
+    try:
+        print(f"Creating results folder for experiment: {args.experiment_name}")
+        os.mkdir(f"results/{args.experiment_name}")
+        os.mkdir(f"results/{args.experiment_name}/figures")
+    except FileExistsError:
+        print("Skipping step")
+        print("Folder already exists")
+
+    try:
+        print("Creating trained_models folder")
+        os.mkdir(f"results/{args.experiment_name}/trained_models")
+    except FileExistsError:
+        print("Folder already exists")
+        print("Aborting experiment")
+        sys.exit(1)
+
 
 
 
@@ -159,7 +196,7 @@ if __name__ == "__main__":
     augmented_data_sample_size=int(args.n_augmented_samples)
 
     for i in range(int(args.n_rcv)):
-        mse_error_list, mae_error_list = vae_loop(augmented_data_sample_size, augment_data=True, random_seed=random.randint(1,100000))
+        mse_error_list, mae_error_list = vae_loop(augmented_data_sample_size, i, args.experiment_name, augment_data=True, random_seed=random.randint(1,100000))
         rcv_mse_error_list.append(mse_error_list)
         rcv_mae_error_list.append(mae_error_list)
 
@@ -182,5 +219,5 @@ if __name__ == "__main__":
         }
 
     output_filename = str(args.output_name)
-    with open(f"{output_filename}.json",'w') as output_file:
+    with open(f"results/{args.experiment_name}/{output_filename}.json",'w') as output_file:
         output_file.write(json.dumps(data))

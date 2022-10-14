@@ -179,12 +179,12 @@ def train(net, train_set, test_set, config, max_epochs=4000):
 
         
 
-def train_vae(vae, train_data, val_data, config, output_filename, epochs=3000):
+def train_vae(vae, train_data, val_data, config, output_filename, experiment_name, epochs=3000):
     
     train_dataloader = DataLoader(train_data, batch_size=config["batch_size"], shuffle=True)
     val_dataloader = DataLoader(val_data, batch_size=config["batch_size"], shuffle=True)
 
-    earlystopper = EarlyStopping(patience=400,verbose=False)
+    earlystopper = EarlyStopping(patience=300,verbose=False)
     
     vae.train()
     best_model_loss = np.inf
@@ -223,7 +223,7 @@ def train_vae(vae, train_data, val_data, config, output_filename, epochs=3000):
         if val_loss < best_model_loss:
             best_model_loss = val_loss
             best_epoch = epoch
-            torch.save(vae,f"trained_models/{output_filename}.pt")
+            torch.save(vae,f"results/{experiment_name}/trained_models/{output_filename}.pt")
 
         
         if earlystopper.early_stop:
@@ -231,7 +231,7 @@ def train_vae(vae, train_data, val_data, config, output_filename, epochs=3000):
             break
         
 
-        wandb.log({"train_loss":train_loss/loss_step,"train_recon_loss":recon_loss/loss_step, "train_KL-divergence":KL_divergence/loss_step,"val_loss":val_loss/val_steps,"val_recon_loss":val_recon_loss/val_steps, "val_KL-divergence":val_KL_divergence/val_steps},step=epoch)
+        #wandb.log({"train_loss":train_loss/loss_step,"train_recon_loss":recon_loss/loss_step, "train_KL-divergence":KL_divergence/loss_step,"val_loss":val_loss/val_steps,"val_recon_loss":val_recon_loss/val_steps, "val_KL-divergence":val_KL_divergence/val_steps},step=epoch)
 
     print("Best epoch:", best_epoch)
 
